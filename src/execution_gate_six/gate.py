@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Mapping
 
+from .adapters import InMemoryNonceStore, NonceStore, StateStore
+
 
 class Verdict(str, Enum):
     ALLOW = "ALLOW"
@@ -111,17 +113,26 @@ class Gate:
         known_principals: frozenset[str],
         max_age_seconds: float = 30.0,
         state_reader: Callable[[str], str] | None = None,
+        state_store: StateStore | None = None,
+        nonce_store: NonceStore | None = None,
         clock: Callable[[], float] = time.time,
     ) -> None:
         if not secret:
             # Fail-closed even at construction: no secret, no trust.
             raise ValueError("Gate requires a non-empty secret (fail-closed).")
+        if state_reader is not None and state_store is not None:
+            raise ValueError("Provide either state_reader or state_store, not both.")
         self._secret = secret
         self._known_principals = known_principals
         self._max_age = max_age_seconds
-        self._state_reader = state_reader
+        # Normalise state access to a single callable. A StateStore takes
+        # precedence; otherwise the legacy callable; otherwise None.
+        if state_store is not None:
+            self._state_reader: Callable[[str], str] | None = state_store.read
+        else:
+            self._state_reader = state_reader
+        self._nonce_store: NonceStore = nonce_store or InMemoryNonceStore()
         self._clock = clock
-        self._seen_nonces: set[str] = set()
 
     # --- the six predicates -------------------------------------------------
 
@@ -146,7 +157,7 @@ class Gate:
         return Decision("freshness", Verdict.ALLOW, f"fresh ({age:.1f}s)")
 
     def _check_replay(self, req: Request) -> Decision:
-        if req.nonce in self._seen_nonces:
+        if self._nonce_store.seen(req.nonce):
             return Decision("replay", Verdict.DENY, "nonce already used")
         return Decision("replay", Verdict.ALLOW, "nonce unseen")
 
@@ -186,11 +197,11 @@ class Gate:
             self._check_receipt,
         )
         decisions: list[Decision] = []
-        for fn in checks:
+        for prop, fn in zip(PROPERTIES, checks):
             try:
                 decisions.append(fn(req))
             except Exception as exc:  # fail-closed on any predicate error
-                decisions.append(Decision(fn.__name__, Verdict.DENY, f"predicate error: {exc}"))
+                decisions.append(Decision(prop, Verdict.DENY, f"predicate error: {exc}"))
 
         verdict = (
             Verdict.ALLOW
@@ -201,7 +212,7 @@ class Gate:
         # Replay protection only commits once the request is otherwise admissible
         # AND actually allowed — a denied request does not burn its nonce.
         if verdict is Verdict.ALLOW:
-            self._seen_nonces.add(req.nonce)
+            self._nonce_store.consume(req.nonce)
 
         decided_at = self._clock()
         digest = hmac.new(

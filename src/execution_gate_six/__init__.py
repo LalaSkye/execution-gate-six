@@ -10,6 +10,15 @@ Any property that cannot be positively established -> DENY (fail-closed).
 """
 
 from .gate import Gate, Decision, Verdict, Request, Receipt
+from .adapters import (
+    StateStore,
+    NonceStore,
+    InMemoryStateStore,
+    InMemoryNonceStore,
+)
 
-__all__ = ["Gate", "Decision", "Verdict", "Request", "Receipt"]
-__version__ = "0.1.0"
+__all__ = [
+    "Gate", "Decision", "Verdict", "Request", "Receipt",
+    "StateStore", "NonceStore", "InMemoryStateStore", "InMemoryNonceStore",
+]
+__version__ = "0.2.0"

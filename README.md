@@ -1,5 +1,7 @@
 # execution-gate-six
 
+![CI](https://github.com/LalaSkye/execution-gate-six/actions/workflows/ci.yml/badge.svg)
+
 A fail-closed runtime authority gate over six independent properties:
 
 > **Authority. Scope. Freshness. Replay. State. Receipt.**
@@ -73,6 +75,31 @@ Every call returns a **Receipt**: per-property decisions plus a tamper-evident
 digest. A denied request does **not** burn its nonce, so a legitimate retry
 after fixing the cause still works.
 
+## Pluggable adapters
+
+The two pieces of mutable world the gate touches are swappable behind Protocols,
+so you can back them with a dict, Redis, or a database without the gate knowing:
+
+- **`StateStore`** — reads *live* state at the instant of the decision. A store
+  that raises causes the state predicate to DENY (fail-closed).
+- **`NonceStore`** — tracks consumed nonces for replay protection. Share one
+  store across gate instances for cross-process replay protection; swap for a
+  durable backend so protection survives a restart.
+
+```python
+from execution_gate_six import Gate, InMemoryStateStore, InMemoryNonceStore
+
+gate = Gate(
+    b"your-secret",
+    known_principals=frozenset({"agent-alpha"}),
+    state_store=InMemoryStateStore({"account_locked": "false"}),
+    nonce_store=InMemoryNonceStore(),
+)
+```
+
+The legacy `state_reader=` callable is still accepted; passing both it and
+`state_store=` raises (one source of truth).
+
 ## Worked example
 
 ```
@@ -91,7 +118,11 @@ pytest
 
 The suite proves each property is enforced independently — including that a
 fully authorised, in-scope, signed, fresh request is still denied when it is a
-replay or when live state has drifted.
+replay or when live state has drifted, that a raising state store fails closed,
+and that a shared nonce store gives cross-instance replay protection.
+
+CI runs the suite and the worked example on Python 3.10–3.12 via GitHub
+Actions (`.github/workflows/ci.yml`).
 
 ## Claim boundary
 
