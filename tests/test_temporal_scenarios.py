@@ -50,8 +50,7 @@ def _records(name: str):
             "authority_removed.json",
             [
                 ("ALLOW", None),
-                ("DENY", "Authority"),     # current request still valid in form, but principal no longer recognised
-                ("DENY", "Authority"),     # explicit re-issue with fresh nonce isolates to Authority
+                ("DENY", "Authority"),     # remove + reissue with fresh nonce isolates to Authority
             ],
         ),
         (
@@ -65,8 +64,7 @@ def _records(name: str):
             "state_drift.json",
             [
                 ("ALLOW", None),
-                ("DENY", "State"),         # live state drifted, current request rechecked
-                ("DENY", "State"),         # re-issue with fresh nonce isolates to State
+                ("DENY", "State"),         # mutate_state + reissue with fresh nonce isolates to State
             ],
         ),
         (
@@ -189,6 +187,54 @@ def test_run_twice_produces_equivalent_deterministic_cores(scenario_file):
 # ---------------------------------------------------------------------------
 # No-effect-after-transition invariant
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Isolation regression: the invalidating step names exactly one property.
+# Every scenario except replay_after_allow MUST isolate the named property
+# at its invalidating step (no spurious Replay, no spurious Freshness, no
+# spurious State). replay_after_allow is excluded because its invalidating
+# property IS Replay.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "scenario_file,deny_step_index,expected_only_property",
+    [
+        ("fresh_then_stale.json", 1, "Freshness"),
+        ("authority_removed.json", 1, "Authority"),
+        ("scope_narrowed.json", 1, "Scope"),
+        ("state_drift.json", 1, "State"),
+    ],
+)
+def test_invalidating_step_isolates_to_one_property(
+    scenario_file, deny_step_index, expected_only_property
+):
+    record = _records(scenario_file)[deny_step_index]
+    assert record["verdict"] == "DENY"
+    assert record["failed_properties"] == [expected_only_property], (
+        f"{scenario_file} step {deny_step_index}: expected ONLY "
+        f"[{expected_only_property!r}], got {record['failed_properties']!r}"
+    )
+
+
+def test_fresh_then_stale_does_not_trip_replay():
+    """Explicit regression: the freshness invalidation must NOT name Replay."""
+    record = _records("fresh_then_stale.json")[1]
+    assert "Replay" not in record["failed_properties"], (
+        f"Freshness scenario unexpectedly tripped Replay: {record['failed_properties']!r}"
+    )
+    assert "Freshness" in record["failed_properties"]
+
+
+def test_fresh_then_stale_total_mutation_is_one():
+    """Only the ALLOW step may mutate. The denied freshness step must not."""
+    records = _records("fresh_then_stale.json")
+    assert records[0]["verdict"] == "ALLOW"
+    assert records[0]["mutation_count_after"] == 1
+    assert records[1]["verdict"] == "DENY"
+    assert records[1]["mutation_count_after"] == 1  # unchanged
+    assert records[1]["mutation_count_before"] == 1
 
 
 @pytest.mark.parametrize("scenario_file", [

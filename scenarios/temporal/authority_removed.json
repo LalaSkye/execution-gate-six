@@ -1,6 +1,6 @@
 {
   "scenario_id": "authority_removed",
-  "description": "A recognised principal is removed from the recognised authority set between two checks. A fresh nonce isolates the failure to the Authority property.",
+  "description": "A recognised principal is removed from the recognised authority set between two checks. The invalidating step removes the principal and issues a freshly signed request with a new nonce, isolating the failure to Authority.",
   "secret": "temporal-pack-secret-2",
   "known_principals": ["agent-alpha"],
   "max_age_seconds": 60.0,
@@ -23,16 +23,10 @@
     },
     {
       "step": 1,
-      "event": "remove_authority",
+      "event": "remove_authority_and_reissue",
       "principals": ["agent-alpha"],
-      "label": "principal removed from recognised set",
-      "expected_verdict": "DENY"
-    },
-    {
-      "step": 2,
-      "event": "issue_request",
-      "overrides": {"nonce": "ar-nonce-2"},
-      "label": "re-issue with fresh nonce so failure isolates to Authority",
+      "new_nonce": "ar-nonce-2",
+      "label": "principal removed; reissued with fresh nonce so failure isolates to Authority",
       "expected_verdict": "DENY",
       "expected_failed_property": "Authority"
     }

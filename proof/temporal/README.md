@@ -30,21 +30,28 @@ so timestamp churn does not affect deterministic verdict replay.
 python examples/temporal_conformance.py verify
 ```
 
-The verifier loads each scenario, re-runs it through the existing six-property
-gate, and compares verdict, failed properties, reason codes, mutation counts
-and the hash chain step by step. The first failing step is reported.
+The verifier is a **replay verifier using the same gate implementation**.
+It disregards the recorded verdict, reloads each scenario, re-runs it
+through the existing six-property gate, and compares verdict, failed
+properties, reason codes, mutation counts and the hash chain step by
+step. The first failing step is reported. It is not an independently
+implemented verification engine.
 
 ## Claim
 
-On the included deterministic scenarios, the pack identifies and replays
-the first step at which an initially admissible request becomes
-inadmissible under the existing Authority, Scope, Freshness, Replay or
-State checks.
+On the five included deterministic scenarios, the temporal conformance
+pack shows when an initially admissible request becomes inadmissible
+under the existing Authority, Scope, Freshness, Replay or State checks.
+Each transition produces a hash-linked trace. A replay verifier using
+the same gate implementation re-derives the verdict sequence, and
+denied steps do not invoke the test mutation callback.
 
 ## Non-claims
 
 These traces do not prove certification, production deployment, complete
-authorisation, continuous enterprise monitoring, universal coverage of
-authority change, or that every effect-capable path has been removed.
-Tamper detection proves that a trace changed; it does not prove that every
+authorisation, complete IAM, continuous enterprise monitoring, universal
+authority-decay coverage, that every effect-capable path has been
+removed, semantic truth from cryptographic integrity, an independently
+implemented verifier, a policy engine, or an identity platform. Tamper
+detection proves that a trace changed; it does not prove that every
 recorded statement was true when originally written.

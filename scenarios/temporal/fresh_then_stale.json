@@ -1,6 +1,6 @@
 {
   "scenario_id": "fresh_then_stale",
-  "description": "A valid request becomes inadmissible after the freshness window. The Freshness property fails; the other five remain satisfied.",
+  "description": "A grant that was admissible at issuance becomes inadmissible after the freshness window elapses. The invalidating step re-issues a freshly signed request with a new nonce but the original issued_at, so the failure isolates to Freshness; Replay is not triggered.",
   "secret": "temporal-pack-secret-1",
   "known_principals": ["agent-alpha"],
   "max_age_seconds": 30.0,
@@ -25,9 +25,10 @@
     },
     {
       "step": 1,
-      "event": "advance_time",
+      "event": "advance_time_and_reissue",
       "seconds": 31,
-      "label": "grant ages past freshness window",
+      "new_nonce": "fts-nonce-2",
+      "label": "grant ages past freshness window; reissued with fresh nonce, original issued_at",
       "expected_verdict": "DENY",
       "expected_failed_property": "Freshness"
     }

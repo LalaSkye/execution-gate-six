@@ -1,9 +1,16 @@
 """Replay verifier for temporal conformance traces.
 
+This is a trace-independent replay verifier that runs against the same
+gate implementation. It does NOT constitute an independently implemented
+verification engine: it reuses ``execution_gate_six.gate.Gate`` and the
+temporal runner. Its independence is limited to the recorded trace --
+the recorded verdicts are not treated as authoritative; verdicts are
+re-derived from the scenario by re-running the gate.
+
 The verifier:
     1. Loads one trace (JSONL).
     2. Loads the corresponding scenario.
-    3. Re-runs the scenario through the existing gate.
+    3. Re-runs the scenario through the same gate implementation.
     4. Compares verdict, failed properties, reason codes, mutation counts
        and hash-chain continuity, in order.
     5. Returns the first failing step (if any).

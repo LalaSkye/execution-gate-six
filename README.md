@@ -135,8 +135,8 @@ Narrow question answered:
 
 > Given a fixed sequence of changes, at which step does an initially
 > admissible request become inadmissible, which existing gate property
-> caused the transition, and can an independent verifier replay the
-> trace and reproduce every verdict?
+> caused the transition, and can a replay verifier using the same gate
+> implementation re-derive every verdict?
 
 Five deterministic scenarios live under `scenarios/temporal/`:
 
@@ -186,31 +186,32 @@ A denied step never invokes the in-memory mutation probe. A replayed
 request never produces a second mutation. Each evaluation step writes
 one JSONL record under [`proof/temporal/`](proof/temporal/), with a
 previous-record hash and a record hash that re-derive deterministically.
-A single-field tamper, record removal, record reorder or unsupported
-`trace_version` causes verification to fail and reports the first
-failing step. The deterministic core of every record is byte-identical
-across runs; the wall-clock timestamp lives only in `manifest.json` so
-it does not affect verdict replay.
+A single-field tamper (verdict, failed property, reason code), record
+removal, record reorder or unsupported `trace_version` causes
+verification to fail and reports the first failing step. The
+deterministic core of every record is byte-identical across runs; the
+wall-clock timestamp lives only in `manifest.json` so it does not affect
+verdict replay.
 
 ### Bounded claim
 
-On the included deterministic scenarios, the pack identifies and replays
-the first step at which an initially admissible request becomes
-inadmissible under one of the existing Authority, Scope, Freshness,
-Replay or State checks. Each demonstrated transition produces a
-hash-linked trace that can be replayed, and denied steps do not invoke
-the test mutation callback.
+On the five included deterministic scenarios, the temporal conformance
+pack shows when an initially admissible request becomes inadmissible
+under the existing Authority, Scope, Freshness, Replay or State checks.
+Each transition produces a hash-linked trace. A replay verifier using
+the same gate implementation re-derives the verdict sequence, and
+denied steps do not invoke the test mutation callback.
 
 ### Non-claims
 
 The temporal pack is not certification, not production deployment, not
-complete authorisation, not continuous enterprise monitoring, not
-universal coverage of authority change, not proof that every
-effect-capable path has been removed, not proof of semantic truth from
-cryptographic integrity, not a new policy engine, not a complete
-identity system, and not a TrinityOS architecture disclosure.
-Demonstrated only on the paths exercised by the included scenarios and
-tests. See [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md) and
+complete authorisation, not complete IAM, not continuous enterprise
+monitoring, not universal authority-decay coverage, not proof that all
+effect-capable paths are eliminated, not semantic truth from
+cryptographic integrity, not an independently implemented verifier, not
+a policy engine, not an identity platform, and not a TrinityOS
+architecture disclosure. Demonstrated only on the included paths and
+fixtures. See [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md) and
 [`proof/temporal/README.md`](proof/temporal/README.md) for the full
 boundary statement.
 

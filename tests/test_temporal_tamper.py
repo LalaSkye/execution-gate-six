@@ -41,7 +41,7 @@ def test_changing_a_verdict_breaks_verification(tmp_path):
 
 def test_changing_a_failed_property_breaks_verification(tmp_path):
     records = _fresh_records()
-    records[1]["failed_properties"] = ["Receipt"]  # was Freshness/Replay
+    records[1]["failed_properties"] = ["Receipt"]  # was [Freshness]
     out = tmp_path / "trace.jsonl"
     _write_records(out, records)
     result = verify(str(SCENARIO_FILE), str(out))
@@ -107,6 +107,18 @@ def test_recomputing_hash_after_tamper_still_fails(tmp_path):
     # gate's re-derived ALLOW/DENY pattern disagrees with the tampered trace.
     assert not result.ok
     assert result.first_failing_step is not None
+
+
+def test_changing_a_reason_code_breaks_verification(tmp_path):
+    records = _fresh_records()
+    # Step 1 has at least one reason code (e.g. 'freshness_stale').
+    assert records[1]["reason_codes"], "fixture must produce at least one reason code"
+    records[1]["reason_codes"] = ["counterfeit_code"]
+    out = tmp_path / "trace.jsonl"
+    _write_records(out, records)
+    result = verify(str(SCENARIO_FILE), str(out))
+    assert not result.ok
+    assert result.first_failing_step == 1
 
 
 def test_malformed_jsonl_line_is_rejected(tmp_path):

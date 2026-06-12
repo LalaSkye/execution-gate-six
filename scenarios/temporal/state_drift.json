@@ -1,6 +1,6 @@
 {
   "scenario_id": "state_drift",
-  "description": "Live state drifts between two checks. A fresh nonce-bearing request is re-issued so the failure isolates to the State property rather than Replay.",
+  "description": "Live state drifts between two checks. The invalidating step mutates live state and reissues a freshly signed request with a new nonce, isolating the failure to State.",
   "secret": "temporal-pack-secret-4",
   "known_principals": ["agent-alpha"],
   "max_age_seconds": 60.0,
@@ -25,16 +25,10 @@
     },
     {
       "step": 1,
-      "event": "mutate_state",
+      "event": "mutate_state_and_reissue",
       "set": {"account_locked": "true"},
-      "label": "live state drifts after issuance",
-      "expected_verdict": "DENY"
-    },
-    {
-      "step": 2,
-      "event": "issue_request",
-      "overrides": {"nonce": "sd-nonce-2"},
-      "label": "re-issue with fresh nonce so failure isolates to State",
+      "new_nonce": "sd-nonce-2",
+      "label": "live state drifts; reissued with fresh nonce so failure isolates to State",
       "expected_verdict": "DENY",
       "expected_failed_property": "State"
     }

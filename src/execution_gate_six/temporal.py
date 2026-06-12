@@ -9,8 +9,8 @@ Narrow question answered:
 
     Given a fixed sequence of changes, at which step does an initially
     admissible request become inadmissible, which existing gate property
-    caused the transition, and can an independent verifier replay the trace
-    and reproduce every verdict?
+    caused the transition, and can a replay verifier using the same gate
+    implementation re-derive every verdict?
 
 Operational invariant:
 
@@ -443,6 +443,56 @@ def _apply_event(ctx: _RunContext, step: TemporalStep) -> tuple[Verdict, list[De
         for p in payload.get("principals", []):
             ctx.known_principals.discard(str(p))
         _rebuild_gate(ctx)
+        return _execute_check_step(ctx, step)
+
+    if event == "remove_authority_and_reissue":
+        # Remove the named principals from the recognised set and then issue a
+        # freshly signed request with a new nonce so the failure isolates to
+        # Authority rather than Replay. Issuance time is reset to the current
+        # simulated clock so Freshness is also not implicated.
+        for p in payload.get("principals", []):
+            ctx.known_principals.discard(str(p))
+        _rebuild_gate(ctx)
+        new_nonce = payload.get("new_nonce")
+        if new_nonce is None:
+            raise ValueError("remove_authority_and_reissue requires 'new_nonce'")
+        overrides = dict(payload.get("overrides", {}))
+        overrides["nonce"] = str(new_nonce)
+        overrides.setdefault("issued_at", ctx.clock())
+        ctx.current_request = _build_request(ctx.gate, ctx.request_template, overrides)
+        return _execute_check_step(ctx, step)
+
+    if event == "mutate_state_and_reissue":
+        # Mutate live state and then issue a freshly signed request with a new
+        # nonce so the failure isolates to State rather than Replay. Issuance
+        # time is reset to the current simulated clock so Freshness is not
+        # implicated.
+        for k, v in payload.get("set", {}).items():
+            ctx.state_store.set(str(k), str(v))
+        new_nonce = payload.get("new_nonce")
+        if new_nonce is None:
+            raise ValueError("mutate_state_and_reissue requires 'new_nonce'")
+        overrides = dict(payload.get("overrides", {}))
+        overrides["nonce"] = str(new_nonce)
+        overrides.setdefault("issued_at", ctx.clock())
+        ctx.current_request = _build_request(ctx.gate, ctx.request_template, overrides)
+        return _execute_check_step(ctx, step)
+
+    if event == "advance_time_and_reissue":
+        # Advance the simulated clock and then issue a NEW signed request
+        # that reuses the ORIGINAL grant issuance time. The reissue carries
+        # a fresh, unused nonce so the failure isolates to Freshness rather
+        # than Replay. Principal, action, scope and assumed state are
+        # preserved from the scenario template unless explicitly overridden.
+        ctx.clock.advance(float(payload.get("seconds", 0)))
+        overrides = dict(payload.get("overrides", {}))
+        new_nonce = payload.get("new_nonce")
+        if new_nonce is None:
+            raise ValueError("advance_time_and_reissue requires 'new_nonce'")
+        overrides["nonce"] = str(new_nonce)
+        # Original issuance time is preserved (it is the property under test).
+        overrides.setdefault("issued_at", ctx.request_template["issued_at"])
+        ctx.current_request = _build_request(ctx.gate, ctx.request_template, overrides)
         return _execute_check_step(ctx, step)
 
     if event == "narrow_scope":
