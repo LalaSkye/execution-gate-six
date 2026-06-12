@@ -1,0 +1,36 @@
+{
+  "scenario_id": "state_drift",
+  "description": "Live state drifts between two checks. The invalidating step mutates live state and reissues a freshly signed request with a new nonce, isolating the failure to State.",
+  "secret": "temporal-pack-secret-4",
+  "known_principals": ["agent-alpha"],
+  "max_age_seconds": 60.0,
+  "initial_state": {
+    "account_locked": "false"
+  },
+  "request": {
+    "action": "transfer_funds",
+    "principal": "agent-alpha",
+    "nonce": "sd-nonce-1",
+    "issued_at": 4000000.0,
+    "granted_scopes": ["transfer_funds"],
+    "required_scope": "transfer_funds",
+    "assumed_state": {"account_locked": "false"}
+  },
+  "steps": [
+    {
+      "step": 0,
+      "event": "issue_request",
+      "label": "assumed state matches live",
+      "expected_verdict": "ALLOW"
+    },
+    {
+      "step": 1,
+      "event": "mutate_state_and_reissue",
+      "set": {"account_locked": "true"},
+      "new_nonce": "sd-nonce-2",
+      "label": "live state drifts; reissued with fresh nonce so failure isolates to State",
+      "expected_verdict": "DENY",
+      "expected_failed_property": "State"
+    }
+  ]
+}

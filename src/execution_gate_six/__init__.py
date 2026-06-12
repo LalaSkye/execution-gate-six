@@ -16,9 +16,21 @@ from .adapters import (
     InMemoryStateStore,
     InMemoryNonceStore,
 )
+from .temporal import (
+    TRACE_VERSION,
+    MutationProbe,
+    TemporalScenario,
+    TemporalStep,
+    run_scenario,
+    serialise_trace,
+)
+from .trace_verify import VerifyResult, load_scenario, load_trace, verify
 
 __all__ = [
     "Gate", "Decision", "Verdict", "Request", "Receipt",
     "StateStore", "NonceStore", "InMemoryStateStore", "InMemoryNonceStore",
+    "TRACE_VERSION", "MutationProbe", "TemporalScenario", "TemporalStep",
+    "run_scenario", "serialise_trace",
+    "VerifyResult", "load_scenario", "load_trace", "verify",
 ]
 __version__ = "0.2.0"
