@@ -1,0 +1,55 @@
+{
+  "claim": "On the included deterministic scenarios, the pack identifies and replays the first step at which an initially admissible request becomes inadmissible under the existing Authority, Scope, Freshness, Replay or State checks.",
+  "claim_boundary": "See CLAIM_BOUNDARY.md and the temporal README.",
+  "execution_gate_six_version": "0.2.0",
+  "generated_at_iso8601": "2026-06-12T21:33:19Z",
+  "pack_version": "0.1",
+  "scenarios": [
+    {
+      "description": "A valid request becomes inadmissible after the freshness window. The Freshness property fails; the other five remain satisfied.",
+      "expected_first_denied_step": 1,
+      "scenario_file": "scenarios/temporal/fresh_then_stale.json",
+      "scenario_id": "fresh_then_stale",
+      "step_count": 2,
+      "trace_file": "proof/temporal/fresh_then_stale.trace.jsonl",
+      "trace_root": "sha256:8018aa3a819f3049bdeb073b759701e88aa5712443546946414b4cabebb4d8d4"
+    },
+    {
+      "description": "A recognised principal is removed from the recognised authority set between two checks. A fresh nonce isolates the failure to the Authority property.",
+      "expected_first_denied_step": 1,
+      "scenario_file": "scenarios/temporal/authority_removed.json",
+      "scenario_id": "authority_removed",
+      "step_count": 3,
+      "trace_file": "proof/temporal/authority_removed.trace.jsonl",
+      "trace_root": "sha256:512820c4614c92f9d9baed7df5be99f395cfa09006bd2cfb38528216c7ea6aea"
+    },
+    {
+      "description": "A new signed request is issued with a narrowed granted_scopes set that no longer covers the required_scope. Scope fails; the signature remains valid because the new request is freshly signed.",
+      "expected_first_denied_step": 1,
+      "scenario_file": "scenarios/temporal/scope_narrowed.json",
+      "scenario_id": "scope_narrowed",
+      "step_count": 2,
+      "trace_file": "proof/temporal/scope_narrowed.trace.jsonl",
+      "trace_root": "sha256:5ff0be6e43c5ff3f6f53d28569dd4b23276d68742bb0a0b856596bd782ef5ab0"
+    },
+    {
+      "description": "Live state drifts between two checks. A fresh nonce-bearing request is re-issued so the failure isolates to the State property rather than Replay.",
+      "expected_first_denied_step": 1,
+      "scenario_file": "scenarios/temporal/state_drift.json",
+      "scenario_id": "state_drift",
+      "step_count": 3,
+      "trace_file": "proof/temporal/state_drift.trace.jsonl",
+      "trace_root": "sha256:a8ea51e89f2f1f6421dfb5b7187bcbdc65237b7e789a7a381ba3cb1d0a6e0b33"
+    },
+    {
+      "description": "A valid request runs once and is then re-submitted unchanged. Replay protection denies the second submission. Total mutation count remains exactly one.",
+      "expected_first_denied_step": 1,
+      "scenario_file": "scenarios/temporal/replay_after_allow.json",
+      "scenario_id": "replay_after_allow",
+      "step_count": 2,
+      "trace_file": "proof/temporal/replay_after_allow.trace.jsonl",
+      "trace_root": "sha256:6e0ced73f9904c81f2aaccfd845e85f118082022df3ca346aa8c5315ccccc7b9"
+    }
+  ],
+  "verifier_command": "python examples/temporal_conformance.py verify"
+}

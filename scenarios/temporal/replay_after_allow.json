@@ -1,0 +1,32 @@
+{
+  "scenario_id": "replay_after_allow",
+  "description": "A valid request runs once and is then re-submitted unchanged. Replay protection denies the second submission. Total mutation count remains exactly one.",
+  "secret": "temporal-pack-secret-5",
+  "known_principals": ["agent-alpha"],
+  "max_age_seconds": 60.0,
+  "initial_state": {},
+  "request": {
+    "action": "rotate_key",
+    "principal": "agent-alpha",
+    "nonce": "raa-nonce-1",
+    "issued_at": 5000000.0,
+    "granted_scopes": ["rotate_key"],
+    "required_scope": "rotate_key",
+    "assumed_state": {}
+  },
+  "steps": [
+    {
+      "step": 0,
+      "event": "issue_request",
+      "label": "first submission",
+      "expected_verdict": "ALLOW"
+    },
+    {
+      "step": 1,
+      "event": "submit_request",
+      "label": "identical resubmission",
+      "expected_verdict": "DENY",
+      "expected_failed_property": "Replay"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "scenario_id": "state_drift",
+  "description": "Live state drifts between two checks. A fresh nonce-bearing request is re-issued so the failure isolates to the State property rather than Replay.",
+  "secret": "temporal-pack-secret-4",
+  "known_principals": ["agent-alpha"],
+  "max_age_seconds": 60.0,
+  "initial_state": {
+    "account_locked": "false"
+  },
+  "request": {
+    "action": "transfer_funds",
+    "principal": "agent-alpha",
+    "nonce": "sd-nonce-1",
+    "issued_at": 4000000.0,
+    "granted_scopes": ["transfer_funds"],
+    "required_scope": "transfer_funds",
+    "assumed_state": {"account_locked": "false"}
+  },
+  "steps": [
+    {
+      "step": 0,
+      "event": "issue_request",
+      "label": "assumed state matches live",
+      "expected_verdict": "ALLOW"
+    },
+    {
+      "step": 1,
+      "event": "mutate_state",
+      "set": {"account_locked": "true"},
+      "label": "live state drifts after issuance",
+      "expected_verdict": "DENY"
+    },
+    {
+      "step": 2,
+      "event": "issue_request",
+      "overrides": {"nonce": "sd-nonce-2"},
+      "label": "re-issue with fresh nonce so failure isolates to State",
+      "expected_verdict": "DENY",
+      "expected_failed_property": "State"
+    }
+  ]
+}

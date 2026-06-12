@@ -1,0 +1,35 @@
+{
+  "scenario_id": "fresh_then_stale",
+  "description": "A valid request becomes inadmissible after the freshness window. The Freshness property fails; the other five remain satisfied.",
+  "secret": "temporal-pack-secret-1",
+  "known_principals": ["agent-alpha"],
+  "max_age_seconds": 30.0,
+  "initial_state": {
+    "account_locked": "false"
+  },
+  "request": {
+    "action": "transfer_funds",
+    "principal": "agent-alpha",
+    "nonce": "fts-nonce-1",
+    "issued_at": 1000000.0,
+    "granted_scopes": ["transfer_funds"],
+    "required_scope": "transfer_funds",
+    "assumed_state": {"account_locked": "false"}
+  },
+  "steps": [
+    {
+      "step": 0,
+      "event": "issue_request",
+      "label": "fresh grant",
+      "expected_verdict": "ALLOW"
+    },
+    {
+      "step": 1,
+      "event": "advance_time",
+      "seconds": 31,
+      "label": "grant ages past freshness window",
+      "expected_verdict": "DENY",
+      "expected_failed_property": "Freshness"
+    }
+  ]
+}

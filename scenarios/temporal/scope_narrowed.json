@@ -1,0 +1,34 @@
+{
+  "scenario_id": "scope_narrowed",
+  "description": "A new signed request is issued with a narrowed granted_scopes set that no longer covers the required_scope. Scope fails; the signature remains valid because the new request is freshly signed.",
+  "secret": "temporal-pack-secret-3",
+  "known_principals": ["agent-alpha"],
+  "max_age_seconds": 60.0,
+  "initial_state": {},
+  "request": {
+    "action": "transfer_funds",
+    "principal": "agent-alpha",
+    "nonce": "sn-nonce-1",
+    "issued_at": 3000000.0,
+    "granted_scopes": ["transfer_funds"],
+    "required_scope": "transfer_funds",
+    "assumed_state": {}
+  },
+  "steps": [
+    {
+      "step": 0,
+      "event": "issue_request",
+      "label": "scope satisfied",
+      "expected_verdict": "ALLOW"
+    },
+    {
+      "step": 1,
+      "event": "narrow_scope",
+      "new_nonce": "sn-nonce-2",
+      "granted_scopes": ["read_balance"],
+      "label": "re-issue with granted_scopes narrowed below required_scope",
+      "expected_verdict": "DENY",
+      "expected_failed_property": "Scope"
+    }
+  ]
+}
